@@ -15,28 +15,124 @@
 
         <div class="card">
             <div class="card-body">
-                <p>"<i>Suppose you're on a game show, and you're given the choice of three doors: Behind one door is a car; behind the others, goats. You pick a door, say No. 1, and the host, who knows what's behind the doors, opens another door, say No. 3, which has a goat. He then says to you, "Do you want to pick door No. 2?" Is it to your advantage to switch your choice?</i>"</p>
+                <p>"<i>Suppose you're on a game show, and you're given the choice of three doors: Behind one door is a
+                        car; behind the others, goats. You pick a door, say No. 1, and the host, who knows what's behind
+                        the doors, opens another door, say No. 3, which has a goat. He then says to you, "Do you want to
+                        pick door No. 2?" Is it to your advantage to switch your choice?</i>"</p>
                 <p>This app will demononstrate the situation behind the brain teaser and prove that the theory works</p>
-                <div class="row">
-                    <div class="col-sm">
-                        <button type="button" class="btn btn-primary btn-block">Door 1</button>
-                    </div>
-                    <div class="col-sm">
-                        <button type="button" class="btn btn-primary btn-block">Door 2</button>
-                    </div>
-                    <div class="col-sm">
-                        <button type="button" class="btn btn-primary btn-block">Door 3</button>
+
+                <div class="card">
+                    <div class="disabled-overlay"></div>
+                    <div class="card-body">
+                        <strong class="card-title" id="step-title"></strong>
+                        <p class="card-text" id="step-text"></p>
+                        <div id="doors">
+                        </div>
                     </div>
                 </div>
+
             </div>
             <div class="card-footer">
-                <small class="text-muted">Monty Hall problem - <a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">https://en.wikipedia.org/wiki/Monty_Hall_problem</a></small>
+                <small class="text-muted">Monty Hall problem - <a
+                        href="https://en.wikipedia.org/wiki/Monty_Hall_problem">https://en.wikipedia.org/wiki/Monty_Hall_problem</a></small>
             </div>
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+
+    <script>
+        var game = {
+            numDoors: 3,
+            doors: {},
+            step:{title:"1. Pick a door",text:'You have a choice of <span class="door-count"></span> doors. Behind one is a brand new car. The others are goats.'}
+        }
+
+        init();
+
+        function init() {
+            populateDoors();
+            renderDoorsInitial();
+            updateText();
+        }
+
+        // Generate doors
+        // User picks door
+        // Host picks door with goat behind it
+        // User choses to stay or switch door
+        // Host reveals door
+
+        function populateDoors() {
+            for (i = 1; i <= game.numDoors; i++) {
+                game.doors[i] = { behind: "🐐", state: false }
+            }
+            game.doors[pickRandomNumber(1, game.numDoors)].behind = "🚗";
+        }
+        function userPickDoor(door) {
+            game.doors[door].state = "userPicked"
+            $(".door#door-"+door).removeClass('btn-secondary').addClass('btn-success');
+            $("#doors .door").attr('onclick','')
+            game.step.title = "2. Host picks a door";
+            game.step.text = "The host will now reveal which of the closed doors has a goat behind it.";
+            updateText();
+            setTimeout(hostPickDoor,000)
+            
+        }
+        function hostPickDoor() {
+            var hostDoor = pickRandomDoor("🐐",false)
+            game.doors[hostDoor].state = "hostPicked"
+            game.step.text = "The host picked door "+hostDoor+" which revealed a goat behind it. Knowing this information, would you like to switch doors, or stay with your original choice";
+            $(".door#door-"+hostDoor).text(game.doors[hostDoor].behind).removeClass('btn-secondary').addClass('btn-danger').prop('disabled','disabled')
+            $("#doors .door:not(:disabled)").each((a,b)=>{
+                $(b).attr('onclick','userPickNewDoor('+$(b).data("door")+')')
+            });
+            updateText();
+        }
+        function pickRandomDoor(behind,state) {
+            var hostDoorNum = pickRandomNumber(1, game.numDoors)
+            var hostDoor = game.doors[hostDoorNum]
+            if(behind != undefined && hostDoor.behind !== behind){
+                return pickRandomDoor(behind,state)
+            }
+            if(state != undefined && hostDoor.state !== state){
+                return pickRandomDoor(behind,state)
+            }
+            return hostDoorNum
+        }
+
+        function pickRandomNumber(min, max, not = []) {
+            var r = Math.floor(Math.random() * max) + min;
+            if (not.includes(r)) { return pickRandomNumber(min, max, not); }
+
+            return r;
+        }
+
+        function renderDoorsInitial() {
+            for (i = 1; i <= game.numDoors; i++) {
+                $("#doors").append('<button type="button" id="door-' + i + '" data-door="'+i+'" class="door btn btn-secondary btn-block" onclick="userPickDoor(' + i + ')">Door ' + i + '</button>');
+            }
+        }
+
+        function userPickNewDoor(door){
+            game.doors[door].state = "userSecondPicked"
+            $(".door").each((i,d)=>{
+                $(d).text(game.doors[$(d).data('door')].behind);
+            });
+
+        }
+
+        function updateText(){
+            $("#step-title").html(game.step.title);
+            $("#step-text").html(game.step.text);
+            $(".door-count").text(game.numDoors)
+        }
+
+
+
+
+
+    </script>
 </body>
 
 </html>
